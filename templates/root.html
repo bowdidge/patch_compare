@@ -1,0 +1,45 @@
+<h1>All Patches</h1>
+
+{% if collections != [] %}
+Showing only patches from 
+{% for c in collections %} c {% endfor %}
+{% endif %}
+<table>
+<tr>
+  <th>Patch name</th>
+  <th>Source</th>
+  <th>Device</th>
+  <th>Category</th>
+  <th>Effect 1</th>
+  <th>Effect 2</th>
+  <th>Velocity sensitive v1</th>
+</tr>
+{% for patch in patches %}
+<tr>
+  <td>
+    {% if patch.is_favorite %}
+    &#9733;
+    {% else %}
+    &#9734;
+    {% endif %}
+    <a href="patch/{{patch.patch_name}}">{{patch.patch_name}}</a>
+  </td>
+  <td>
+    <a href="?collection={{patch.get('collection')}}">
+      {{patch.get('collection')}}
+    </a>
+  </td>
+  <td><a href="/?device={{patch.get('device')}}">{{patch.get('device')}}</a></td>
+  <td>{{patch.get('patch_category_1')}}, {{patch.get('patch_category_2')}}</td>
+  <td>
+    {{ patch.effect_1_type_name }}
+  </td>
+  <td>
+    {{ patch.effect_2_type_name }}
+  </td>
+  <td>
+    {{ patch.voices[0].velocity_sensitivity}}
+  </td>
+</tr>
+{% endfor %}
+</table>

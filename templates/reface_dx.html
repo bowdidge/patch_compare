@@ -1,0 +1,188 @@
+<h1>Patch {{patch_name}}</h1>
+From {{patch.collection}}
+<style>
+table {
+border:solid;
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/webmidi"></script>
+<script>
+function upload() {
+    var patch = "{{patch.sysex}}";
+    WebMidi.enable(function(err){
+       var outputs = WebMidi.outputs;
+       var output = outputs[0];
+       var id = output.id;
+       var decoded = unescape(patch);
+       var msgs = []
+       var cur_msg = [];
+       var decoded_ints = []
+       var len = decoded.length;
+       var i;
+      
+       for (i=0 ; i < len; i++) {
+           var ch = decoded.charCodeAt(i);
+           if (ch == 0xf0) {
+	       // remove yamaha code.
+               i+= 1;
+	       continue;
+           } else if (ch == 0xf7) {
+               msgs.push(cur_msg);
+               cur_msg = [];
+               continue;
+           }
+           cur_msg.push(decoded.charCodeAt(i));
+       }
+       var i;
+       var msg_count = msgs.length;
+       var bytes = 0;
+       for (i=0; i < msg_count; i++) {
+              var msg = msgs[i];
+              output.sendSysex(0x43, msg);  
+              bytes += msg.length;
+              var j;
+              for (j=0; j < 1000; j++) {
+              }
+       }    }, true);
+}
+upload();
+</script>
+<div id="upload"></div>
+<table>
+<tr>
+  <th>Name</th> <td>{{patch.patch_name}} from {{patch.source}}</td>
+</tr>
+<tr>
+  <th>Algorithm</th>
+  <td>
+    {{patch.patch_algorithm}}
+  </td>
+</tr>
+<tr>
+  <th>Transpose</th>
+  <td>{{patch.patch_transpose}}</td>
+</tr>
+<tr>
+  <th>Polyphony mode</th>
+  <td>{{patch.patch_part_mode}}</td>
+</tr>
+<tr>
+  <th>Port time</th>
+  <td>{{patch.patch_port_time}}</td>
+</tr>
+<tr>
+  <th>Pitch bend range</th>
+  <td>{{patch.patch_pitch_bend_range}} steps</td>
+</tr>
+<tr>
+  <th>LFO wave</th>
+  <td>{{patch.patch_lfo_wave}}</td>
+</tr>
+<tr>
+  <th>LFO speed</th>
+  <td>{{patch.patch_lfo_speed}}</td>
+</tr>
+<tr>
+  <th>LFO delay</th>
+  <td>{{patch.patch_lfo_delay}}</td>
+</tr>
+<tr>
+  <th>LFO pitch modulation depth</th>
+  <td>{{patch.patch_lfo_pitch_mod}}</td>
+</tr>
+<tr>
+  <th>pitch EG:</th>
+  <td>
+    {{patch.patch_pitch_eg_rate_1}} to level {{patch.patch_pitch_eg_level_1}},
+    {{patch.patch_pitch_eg_rate_2}} to level {{patch.patch_pitch_eg_level_2}},
+    {{patch.patch_pitch_eg_rate_3}} to level {{patch.patch_pitch_eg_level_3}},
+    {{patch.patch_pitch_eg_rate_4}} to level {{patch.patch_pitch_eg_level_4}}
+    </td>
+</tr>
+<tr>
+  <th>Effect 1 type</th>
+  <td>{{patch.effect_1_type}}</td>
+</tr>
+<tr>
+  <th>Effect 2 type</th>
+  <td>{{patch.effect_2_type}}</td>
+</tr>
+</table>
+{% for voice_id in ['voice_1', 'voice_2', 'voice_3', 'voice_4']%}
+{% set voice = patch.get(voice_id) %}
+<div style="float:left width:20%">
+<b>Voice {{voice.voice_number}}: {{voice.purpose}} {{voice.character}} </b>
+<table>
+<tr>
+  <th>Graph</th>
+  <td>
+    {{voice.eg_graph}}
+  </td>
+</tr>
+<tr>
+  <th>EG:</th>
+  <td>
+    {{voice.voice_eg_rate_1}} to level {{voice.voice_eg_level_1}},
+    {{voice.voice_eg_rate_2}} to level {{voice.voice_eg_level_2}},
+    {{voice.voice_eg_rate_3}} to level {{voice.voice_eg_level_3}},
+    {{voice.voice_eg_rate_4}} to level {{voice.voice_eg_level_4}}
+    </td>
+</tr>
+<tr>
+  <th>EG rate scaling</th><td>{{voice.voice_eg_rate_scaling}}</td>
+</tr>
+<tr>
+  <th>Output level</th><td>{{voice.voice_output_level}}</td>
+</tr>
+<tr>
+</tr>
+<tr>
+  <th>Feedback type</th>
+  <td>
+  {% if voice.voice_feedback_level == 0 %}
+  no feedback 
+  {% else %}
+  {{voice.voice_feedback_type_name}},
+  level {{voice.voice_feedback_level}}
+  {% endif %}
+  </td>
+</tr>
+<tr>
+  <th>Frequency</th>
+  <td>
+    {{voice.voice_freq_mode_name}}
+    coarse: {{voice.voice_freq_coarse}} fine: {{voice.voice_freq_fine}}
+    {% if voice.voice_freq_detune != 0 %}
+    detune: {{voice.voice_freq_detune}}
+    {% endif %}
+    </td>
+</tr>
+<tr>
+  <th>KB level scale left</th><td>{{voice.voice_kbd_level_scale_left}}</td>
+</tr>
+<tr>
+  <th>KB level scale right</th><td>{{voice.voice_kbd_level_scale_right}}</td>
+</tr>
+<tr>
+  <th>KB level curve left</th><td>{{voice.voice_kbd_level_curve_left}}</td>
+</tr>
+<tr>
+  <th>KB level curve right</th><td>{{voice.voice_kbd_level_curve_right}}</td>
+</tr>
+<tr>
+  <th>LFO AMD (amplitude modulation depth<br>(tremolo, wah)</th><td>{{voice.voice_lfo_amd_depth}}</td>
+</tr>
+<tr>
+  <th>LFO PMD (pitch modulation depth) on<br>(vibrato)</th><td>{{voice.voice_lfo_pmd_on}}</td>
+</tr>
+<tr>
+  <th>Pitch envelope generator on</th><td>{{voice.voice_peg_on}}</td>
+</tr>
+<tr>
+  <th>Velocity sensitivity</th><td>{{voice.voice_velocity_sensitivity}}</td>
+</tr>
+
+
+</table>
+
+{% endfor %}

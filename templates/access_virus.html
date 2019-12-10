@@ -1,0 +1,751 @@
+<style>
+table {
+border:solid;
+}
+th {
+background: #fed;
+}
+
+.patch_name {
+  font: bold 40px Helvectica;
+}
+.category_name {
+font: bold 20px Helvetica;
+}
+#download_status {
+  width: 100%;
+  display: block;
+  background-color: #f6e7a5;
+  height: 40px;
+  text-align: center;
+}
+
+
+.section { 
+border-top: solid 4px black;
+width: 100%;
+margin: 20px;
+display: inline-block;
+}
+
+.section_body {
+  width: 100%;
+}
+.section_title {
+ width=100%;
+background: #eee;
+text-align: center;
+}
+
+.subsection {
+border: solid 1px black;
+width: 24%;
+min-height: 200px;
+display: inline-block;
+float: left;
+}
+
+.subsection_title {
+width:100%;
+background: #eee;
+text-align: center;
+}
+
+/* Tooltip container */
+.tooltip {
+  position: relative;
+  display: inline-block;
+  border-bottom: 1px dotted black; /* If you want dots under the hoverable text */
+}
+
+/* Tooltip text */
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 120px;
+  background-color: black;
+  color: #fff;
+  text-align: center;
+  padding: 5px 0;
+  border-radius: 6px;
+ 
+  /* Position the tooltip text - see examples below! */
+  position: absolute;
+  z-index: 1;
+}
+
+/* Show the tooltip text when you mouse over the tooltip container */
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+}
+
+</style>
+<script src="https://cdn.jsdelivr.net/npm/webmidi"></script>
+<script>
+function upload() {
+    var status = document.getElementById("download_status");
+    var patch = "{{patch.sysex}}";
+    WebMidi.enable(function(err){
+       var outputs = WebMidi.outputs;
+       if (outputs.length < 1) {
+         status.innerHTML = "No MIDI device found.";
+         return;
+       }
+       status.innerHTML = "";	
+       /* Access virus: output1 is midi, 2 is synth. */	   
+       var output = outputs[1];
+       var id = output.id;
+       status.innerHTML = "Connected to " + output.name;
+       var decoded = unescape(patch);
+       var msgs = []
+       var cur_msg = [];
+       var decoded_ints = []
+       var len = decoded.length;
+       var i;
+       // Remove sysex cmd and end, and remove manufacturer - all
+       // are provided by sendSysex.
+       for (i=0 ; i < len; i++) {
+           var ch = decoded.charCodeAt(i);
+           if (ch == 0xf0) {
+	       // Skip manufacturer - added already.
+               // 1 byte for Yamaha, 3 for Access.
+               i += 3
+	       continue;
+           } else if (ch == 0xf7) {
+               msgs.push(cur_msg);
+               cur_msg = [];
+               continue;
+           }
+           cur_msg.push(decoded.charCodeAt(i));
+      }
+       var i;
+       var msg_count = msgs.length;
+       var bytes = 0;
+       if (msg_count == 0) {
+           status.innerHTML += "<br>No messages";
+           return;
+       }
+       for (i=0; i < msg_count; i++) {
+              var msg = msgs[i];
+              // Single byte or array.
+              var manufacturer = {{patch.manufacturer_string}};
+              output.sendSysex(manufacturer, msg);
+              bytes += msg.length;
+              status.innerHTML += "<br>Loaded patch.";
+              var j;
+              for (j=0; j < 1000; j++) {
+              }
+       }    }, true);
+}
+</script>
+<div id="download_status"></div>
+<a href="/">Return to list</a>
+<br>
+<div class="patch_header">
+{% if patch.is_favorite %}
+  <span class="favorite patch_name">&#9733;</span>
+{% else %}
+  <span class="favorite patch_name">&#9734;</span>
+{% endif %}
+  <span class="patch_name">{{patch.patch_name}}</span>
+  <span class="category_name">
+    {% if patch.patch_category_1_numeric != 0 %}
+    {{patch.patch_category_1}}
+    {% endif %}
+    {% if patch.patch_category_2_numeric != 0 %}
+    {{patch.patch_category_2}}
+    {% endif %}
+  </span>
+</div>
+<p>
+For <a href="/?device=virus">Access Virus</a>. From {{patch.source}}. 
+Bank {{patch.patch_bank}}, slot {{patch.patch_bank_offset}}.
+</p>
+<p>
+Patch description here
+{% if (patch.osc1_semitones + patch.osc2_semitones) % 12 != 0 %}
+Chorded.
+{% endif %}
+</p>
+<p>
+</p>
+<div class="section">
+  <div class="section_title">Input</div>
+  <div class="subsection">
+    <div class="subsection_title">Keyboard</div>
+      Transpose: {{patch.patch_transpose}} semitones
+      <br>
+      Smooth mode: {{patch.control_smooth_mode}}
+      <br>
+      Bend: {{patch.control_bender_range_down}} to 
+      {{patch.control_bender_range_up}}, scale: {{patch.control_bender_scale}}
+      <br>
+      Polyphony mode: {{patch.patch_keymode}}
+      <br>
+      Portamento: {{patch.patch.portamento}}
+      <br>
+Soft knob 1 <i>{{patch.soft_knob_name_1}}</i> controls {{patch.soft_knob_function_1}}.
+<br>
+Soft knob 2 <i>{{patch.soft_knob_name_2}}</i> controls {{patch.soft_knob_function_2}}.
+<br>
+Soft knob 3 <i>{{patch.soft_knob_name_3}}</i> controls {{patch.soft_knob_function_3}}.
+<br>
+Mod Wheel controls xxx.  Pressure controls xxx.  Pedal controls xxx.
+
+  </div>
+`  <div class="subsection">
+    <div class="subsection_title">Arpeggiator</div>
+    {% if patch.arpeggio_mode_numeric == 0 %}
+    Off
+    {% else %}
+    Mode: {{patch.arpeggio_mode}}
+    <br>
+    Pattern: {{patch.arpeggio_pattern}}
+    <br>
+    Octave range: {{patch.arpeggio_octave_range}}
+    <br>
+    Hold: {{patch.arpeggio_hold}}
+    <br>
+    Note length: {{patch.arpeggio_note_length}}
+    <br>
+    Swing: {{patch.arpeggio_swing}}
+{% endif %}
+  </div>
+  <div class="subsection">
+    <div class="subsection_title">External Input</div>
+    Mode: {{patch.input_mode}}
+    <br>
+    Select: {{patch.input_select}}
+  </div>
+</div>
+<div class="section">
+  <div class="section_title">Oscillators</div>
+  <div class="section_body">
+  Osc Balance: {{patch.osc_balance}}% (-100=left, 0=center, 100=right)</td>
+<br>
+  Noise: Volume {{patch.noise_volume}}, Color {{patch.noise_color}}
+</div>
+  <div class="subsection">
+    <div class="subsection_title">Oscillator 1</div>
+    Mode: {{patch.osc1_mode}}
+    <br>
+{% if patch.osc1_mode_numeric == 0 %}
+    <div class="tooltip">Shape:
+      <span class="tooltiptext">Density for hypersaw, wave style for wavetable.
+	</span>
+      </div>
+      {{patch.osc1_shape}}
+{% else %}
+    <div class="tooltip">Index:
+      <span class="tooltiptext">Density for hypersaw, wave style for wavetable.
+	</span>
+      </div>
+      {{patch.osc1_shape}}
+{% endif %}
+    <br>
+    <div class="tooltip">Wave:
+      <span class="tooltiptext">Which wave in wavetable.
+	For wavetable, interpolation decides how many waves to average.
+	</span>
+    </div>
+    {{patch.osc1_wave}}
+    <br>
+    <div class="tooltip">Interpolation
+    <span class="tooltiptext">Width of span of waveforms to average.  0=wide, 1=individual
+    </span>: {{ patch.osc1_interpolation }}</div>
+    <br>
+    <div class="tooltip">Pulsewidth
+      <span class="tooltiptext">Width of on from 50-100%.
+	Local detune for hypersaw.</span>
+      : {{ patch.osc1_pulsewidth }}
+    </div>
+    <br>
+    <b>Pitch</b>
+    <br>
+    Transpose: {{patch.osc1_semitones}} steps
+    <br>
+    Keyfollow: 
+    {% if patch.osc1_keyfollow == 32 %}
+    normal
+    {% else %}
+    {{patch.osc1_keyfollow}} (32=normal)
+    {% endif %}
+  </div>
+  <div class="subsection">
+    <div class="subsection_title">Oscillator 2</div>
+    Mode: {{patch.osc2_mode}}
+    <br>
+{% if patch.osc2_mode_numeric == 0 %}
+    <div class="tooltip">Shape:
+      <span class="tooltiptext">Density for hypersaw, wave style for wavetable.
+	</span>
+      </div>
+      {{patch.osc2_shape}}
+{% else %}
+    <div class="tooltip">Index:
+      <span class="tooltiptext">Density for hypersaw, wave style for wavetable.
+	</span>
+      </div>
+      {{patch.osc2_shape}}
+{% endif %}
+    <br>
+    Wave: {{patch.osc2_wave}}
+    <br>
+    <div class="tooltip">Interpolation
+    <span class="tooltiptext">Width of span of waveforms to average.  0=wide, 1=individual
+    </span>: {{ patch.osc2_interpolation }}</div>
+    <br>
+    Pulsewidth: {{ patch.osc2_pulsewidth }}
+    <br>
+    Keyfollow:
+    {% if patch.osc2_keyfollow == 32 %}
+    normal
+    {% else %}
+    {{patch.osc2_keyfollow}} (32=normal)
+    {% endif %}
+    <br>
+    Pitch: 
+    Transpose: {{patch.osc2_semitones}} steps,
+    detune {{patch.osc2_detune}} bits.
+    <br>
+    FM Mode: {{patch.osc_fm_mode}}
+    <br>
+    FM Amount: {{patch.osc2_fm_amount}}
+    <br>
+    Filtenv > Pitch: {{patch.osc2_filtenv_pitch}},
+    <br>
+    Sync: {{patch.osc2_sync}}</td>
+    <br>
+    filtenv_fm: {{patch.osc2_filtenv_fm}}.
+    <p>
+  </div>
+  <div class="subsection">
+    <div class="subsection_title">Suboscillator</div>
+    <br>
+    Mode: {{patch.osc3_mode}}
+    <br>
+    Volume: {{patch.osc3_volume}}
+    <br>
+    Transpose {{patch.osc3_semitones}} steps.
+    <br>
+    Detune {{patch.osc3_detune }}
+    <br>
+    Subosc Volume: {{patch.subosc_volume}}
+    <br>
+    Subosc Shape: {{patch.subosc_shape}}
+  </div>
+</div>
+<div class="section">
+  <div class="section_title">Filters</div>
+  <div class="subsection">
+    <div class="subsection_title">General Filter</div>
+    {{patch.filter_graph }}
+    <br>
+    Routing {{patch.filter_routing}}
+    <br>
+    Attack {{patch.filter_attack}}
+    <br>
+    Decay {{patch.filter_decay}}
+    <br>
+    Sustain {{patch.filter_sustain}}
+    <br>
+    Time {{patch.filter_sustain_time}}
+    <br>
+    Release {{patch.filter_release}}
+    <br>
+    Filter select: {{patch.filter_select}}
+    <br>
+    Balance: {{patch.filter_balance}}
+    <br>
+    Cutoff link: {{patch.filter_cutoff_link}} (0=off,1=on)
+    <br>
+    Key follow base: {{patch.filter_keytrack_base}} (key)
+  </div>
+  <div class="subsection">
+    <div class="subsection_title">Filter 1</div>
+    Mode: {{patch.filter1_mode}}
+    <br>
+    <th>Filter 1 Cutoff: {{patch.filter1_cutoff}}
+    <br>
+    Filter 1 Resonance:{{patch.filter1_resonance}}
+    <br>
+    Filter 1 env: {{patch.filter1_env}}
+    <br>
+    Keyfollow:
+    {% if patch.filter1_keyfollow == 32 %}
+    normal
+    {% else %}
+    {{patch.filter1_keyfollow}} (32=normal)
+    {% endif %}
+    <br>
+  </div>
+  <div class="subsection">
+    <div class="subsection_title">Filter 2</div>
+    Mode: {{patch.filter2_mode}}
+    <br>
+    Cutoff:{{patch.filter2_cutoff}}
+    <br>
+    Resonance: {{patch.filter2_resonance}}
+    <br>
+    Filter 2 env: {{patch.filter2_env}}
+    <br>
+    Keyfollow:
+    {% if patch.filter2_keyfollow == 32 %}
+    normal
+    {% else %}
+    {{patch.filter2_keyfollow}} (30=normal)
+    {% endif %}
+  </div>
+</div>
+<div class="section">
+  <div class="section_title">Amplifier</div>
+  <div class="subsection">
+    <div class="subsection_title">Amplifier</div>
+    {{patch.amplifier_graph }}
+    <br>
+    Attack {{patch.amplifier_attack}}
+    <br>
+    Decay {{patch.amplifier_decay}}
+    <br>
+    Sustain {{patch.amplifier_sustain}}
+    <br>
+    Sustain time {{patch.amplifier_sustain_time}}
+    <br>
+    Release {{patch.amplifier_release}}
+  </div>
+</div>
+<div class="section">
+  <div class="section_title">Modulation</div>
+  <div class="subsection">
+    <div class="subsection_title">LFO 1</div>
+    Rate {{patch.lfo1_rate }}
+    <br>
+    Envmode {{patch.lfo1_envmode}}
+    <br>
+    Mode {{patch.lfo1_mode}}
+    <br>
+    Shape {{ patch.lfo1_shape }}
+    <br>
+    Contour {{patch.lfo1_contour}}
+    <br>
+    Keyfollow:
+    {% if patch.lfo1_keyfollow == 32 %}
+    normal
+    {% else %}
+    {{patch.lfo1_keyfollow}} (32=normal)
+    {% endif %}
+    <br>
+    Trigphase {{patch.lfo1_trigphase}}
+    <br>
+    Osc1 {{patch.lfo1_osc1}}, Osc2 {{patch.lfo1_osc2}}
+    <br>
+    Pulse width {{patch.lfo1_pulsewidth}}
+    <br>
+    Resonance {{ patch.lfo1_resonance}}
+    <br>
+    Filter gain {{ patch.lfo1_filter_gain}}
+    <br>
+    Clock: {{patch.lfo1_clock}}
+    <br>
+    Assign Dest: {{patch.lfo1_assign_dest}}
+  </div>
+  <div class="subsection">
+    <div class="subsection_title">LFO 2</div>
+    Rate {{patch.lfo2_rate }}
+    <br>
+    Envmode {{patch.lfo2_envmode}}
+    <br>
+    Mode {{patch.lfo2_mode}}
+    <br>
+    Contour {{patch.lfo2_contour}}
+    <br>
+    Keyfollow:
+    {% if patch.lfo2_keyfollow == 32 %}
+    normal
+    {% else %}
+    {{patch.lfo2_keyfollow}} (32=normal)
+    {% endif %}
+    <br>
+    Trigphase {{patch.lfo2_trigphase}}
+    <br>
+    Filter 1 {{patch.lfo2_filter1}}
+    <br>
+    Filter 2 {{patch.lfo2_filter2}}
+    <br>
+    Panorama {{patch.lfo2_panorama}}%
+    <br>
+    Shape {{patch.lfo2_shape}}
+    <br>
+    Clock: {{patch.lfo2_clock}}
+    <br>
+    Assign Dest: {{patch.lfo2_assign_dest}}
+  </div>
+  <div class="subsection">
+    <div class="subsection_title">LFO 3</div>
+    Rate: {{patch.lfo3_rate}}
+    <br>
+    Shape: {{patch.lfo3_shape}}
+    <br>
+    Mode: {{patch.lfo3_mode}}
+    <br>
+    Keyfollow:
+    {% if patch.lfo3_keyfollow == 32 %}
+    normal
+    {% else %}
+    {{patch.lfo3_keyfollow}} (32=normal)
+    {% endif %}
+    <br>
+    Destination: {{patch.lfo3_destination}}
+    <br>
+    Osc amount: {{patch.lfo3_osc_amount}}
+    <br>
+    Fade in time: {{patch.lfo3_fade_in_time}}
+    <br>
+    Clock: {{patch.lfo3_clock}}
+  </div>
+  <div class="subsection">
+    <div class="subsection_title">Envelope 3</div>
+    {{patch.env3_graph }}
+    <br>
+    Attack: {{patch.env3_attack}}
+    <br>
+    Decay: {{patch.env3_decay}}
+    <br>
+    Sustain: {{patch.env3_sustain}}
+    <br>
+    Sustain slope: {{patch.env3_sustain_slope}}
+    <br>
+    Release: {{patch3.env3_release}}
+  </div>
+  <div class="subsection">
+    <div class="subsection_title">Envelope 4</div>
+    {{patch.env4_graph }}
+    <br>
+    Attack: {{patch.env4_attack}}
+    <br>
+    Decay: {{patch.env4_decay}}
+    <br>
+    Sustain: {{patch.env4_sustain}}
+    <br>
+    Sustain slope: {{patch.env4_sustain_slope}}
+    <br>
+    Release: {{patch3.env4_release}}
+  </div>
+</div>
+<div class="section">
+  <div class="section_title">Modulation Matrix</div>
+  <div class="section_body">
+    <table>
+      <tr>
+      <th>Slot 1</th>
+	<td>{{patch.mod_matrix_1_source}} </td>
+	<td> &#8594; {{patch.mod_matrix_1_amount_1}} &#8594; {{patch.mod_matrix_1_dest_1}}</td>
+      </tr>
+      <tr>
+	<th></th>
+	<td></td>
+	<td> &#8594; {{patch.mod_matrix_1_amount_2}} &#8594; {{patch.mod_matrix_1_dest_2}}</td>
+      </tr>
+      <tr>
+	<th></th>
+	<td></td>
+	<td> &#8594; {{patch.mod_matrix_1_amount_3}} &#8594; {{patch.mod_matrix_1_dest_3}}</td>
+      </tr>
+      <tr>
+	<th>Slot 2</th>
+	<td>{{patch.mod_matrix_2_source}}</td>
+	<td> {{ patch.mod_matrix_2_amount_1 }} &#8594; {{patch.mod_matrix_2_dest_1}}
+	  </td>
+      </tr>
+      <tr>
+	<th></th>
+	<td></td>
+	<td>{{ patch.mod_matrix_2_amount_2 }} &#8594; {{patch.mod_matrix_2_dest_2}}
+	</td>
+      </tr>
+      <tr>
+	<th></th>
+	<td></td>
+	<td>{{ patch.mod_matrix_2_amount_3 }} &#8594; {{patch.mod_matrix_2_dest_3}}
+	</td>
+      </tr>
+
+      <tr>
+	<th>Slot 3</th>
+	<td>{{patch.mod_matrix_3_source}}</td>
+	<td>{{patch.mod_matrix_3_amount_1 }} &#8594; {{patch.mod_matrix_3_dest_1}}
+	</td>
+      </tr>
+      <tr>
+	<th></th>
+	<td></td>
+	<td>{{patch.mod_matrix_3_amount_2}} &#8594; {{ patch.mod_matrix_3_dest_2}}</td>
+      </tr>
+      <tr>
+	<th></th>
+	<td></td>
+	<td>{{ patch.mod_matrix_3_amount_3 }} &#8594; {{ patch.mod_matrix_3_dest_3}}</td>
+      </tr>
+
+      <tr>
+	<th>Slot 4</th>
+	<td>{{patch.mod_matrix_4_source}}</td>
+	<td>{{patch.mod_matrix_4_amount_1 }} &#8594; {{patch.mod_matrix_4_dest_1}}
+	</td>
+      </tr>
+      <tr>
+	<th></th>
+	<td></td>
+	<td>{{patch.mod_matrix_4_amount_2}} &#8594; {{ patch.mod_matrix_4_dest_2}}</td>
+      </tr>
+      <tr>
+	<th></th>
+	<td></td>
+	<td>{{ patch.mod_matrix_4_amount_3 }} &#8594; {{ patch.mod_matrix_4_dest_3}}</td>
+      </tr>
+
+      <tr>
+	<th>Slot 5</th>
+	<td>{{patch.mod_matrix_5_source}}</td>
+	<td>{{patch.mod_matrix_5_amount_1 }} &#8594; {{patch.mod_matrix_5_dest_1}}
+	</td>
+      </tr>
+      <tr>
+	<th></th>
+	<td></td>
+	<td>{{patch.mod_matrix_5_amount_2}} &#8594; {{ patch.mod_matrix_5_dest_2}}</td>
+      </tr>
+      <tr>
+	<th></th>
+	<td></td>
+	<td>{{ patch.mod_matrix_5_amount_3 }} &#8594; {{ patch.mod_matrix_5_dest_3}}</td>
+      </tr>
+
+      <tr>
+	<th>Slot 6</th>
+	<td>{{patch.mod_matrix_6_source}}</td>
+	<td>{{patch.mod_matrix_6_amount_1 }} &#8594; {{patch.mod_matrix_6_dest_1}}
+	</td>
+      </tr>
+      <tr>
+	<th></th>
+	<td></td>
+	<td>{{patch.mod_matrix_6_amount_2}} &#8594; {{ patch.mod_matrix_6_dest_2}}</td>
+      </tr>
+      <tr>
+	<th></th>
+	<td></td>
+	<td>{{ patch.mod_matrix_6_amount_3 }} &#8594; {{ patch.mod_matrix_6_dest_3}}</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section_title">Effects</div>
+  <div class="subsection">
+    <div class="subsection_title">Delay</div>
+    {% if patch.patch_delay_reverb_mode == 1 or patch.patch_delay_reverb_mode == 3 %}
+    On
+    {% else %}
+    Off
+    {% endif %}
+  </div>
+  <div class="subsection">
+    <div class="subsection_title">Reverb</div>
+    {% if patch.patch_delay_reverb_mode == 2 or patch.patch_delay_reverb_mode == 3 %}
+    On
+    {% else %}
+    Off
+    {% endif %}
+  </div>
+  <div class="subsection">
+    <div class="subsection_title">Equalizer</div>
+  </div>
+  <div class="subsection">
+    <div class="subsection_title">Distortion</div>
+    {% if patch.distortion_curve == 0 %}
+    Off
+    {% else %}
+    On 
+    {% endif %}
+  </div>
+  <div class="subsection">
+    <div class="subsection_title">Character</div>
+  </div>
+  <div class="subsection">
+    <div class="subsection_title">Chorus</div>
+    {% if patch.chorus_mix == 0%}
+    Off
+    {% else %}
+    On
+    {% endif %}
+  </div>
+  <div class="subsection">
+    <div class="subsection_title">Phaser</div>
+    {% if patch.phaser_mix == 0 %}
+    Off
+    {% else %}
+    On
+    {% endif %}
+  </div>
+  <div class="subsection">
+    <div class="subsection_title">Unison</div>
+    Mode: {{ patch.unison_mode }}
+    <br>
+    Detune: {{ patch.unison_detune }}
+    <br>
+    Panspread: {{ patch.unison_panspread}}
+    <br>
+    LFO Phase: {{ patch.unison_lfophase}}
+  </div>
+  <div class="subsection">
+    <div class="subsection_title">Surround</div>
+    Output: ???
+    <br>
+    Balance: ???
+  </div>
+  <div class="subsection">
+    <div class="subsection_title">Others</div>
+  </div>
+</div>
+<div class="section">
+  <div class="section_title">Output</div>
+  <div class="section_body">
+    Overall volume: {{ patch.patch_volume }}
+    <br>
+    Pan: {{ patch.patch_panorama }}% (-100=left, 0=center, 100%=right)
+    <br>
+    Channel volume {{patch.patch_channel_volume }}
+  </div>
+</div>
+
+<table>
+<tr>
+  <th>Velocity Map</th>
+  <td>
+    Volume: ???
+    <br>
+    Panorama: ???
+    <br>
+    FM Amount: ???
+  </td>
+</tr>
+<tr>
+  <th>Vocoder</th>
+  <td>
+    Mode: {{patch.vocoder_mode}}
+  </td>
+</tr>
+</table>
+Similar patches include:
+<ul>
+{% for patch in similar_patches %}
+<li><a href="{{patch.name}}">{{patch.name}}</a>
+{% endfor %}
+</ul>
+<pre>
+{{ patch.hex_dump }}
+</pre>
+<script>
+upload();
+</script>
