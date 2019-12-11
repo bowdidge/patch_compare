@@ -14,7 +14,7 @@
 # 01 xx         device number
 # 10 xx         bank number
 # 7f            program number
-# 0c 
+# 0c
 # 20
 # xx CC 0
 
@@ -92,7 +92,7 @@ mod_sources = {0: 'Off',
                }
 
 mod_dests = {0: 'Off',
-             1: 'Patch Volume', 
+             1: 'Patch Volume',
              2: 'Osc 1 Interpolation',
              3: 'Panorama',
              4: 'Transpose',
@@ -114,7 +114,7 @@ mod_dests = {0: 'Off',
              21: 'Sub Osc Volume',
              22: 'Osc Volume',
              23: 'Noise Volume',
-             24: 'Filter 1 Cutoff', 
+             24: 'Filter 1 Cutoff',
              25: 'Filter 2 Cutoff',
              26: 'Filter 1 Resonance',  # Verif
              27: 'Filter 2 Resonance',
@@ -397,7 +397,7 @@ access_select_styles = {
                   },
     'osc1_shape': wave_shape,
     'osc2_shape': wave_shape,
-    
+
     'osc1_wave': waveforms,
     'osc2_wave': waveforms,
     'subosc_shape': {0: 'square', 1: 'triangle' },
@@ -492,6 +492,31 @@ access_select_styles = {
                     5: '6', 6: '7', 7: '8'},
     'phaser_mode': {0: 'Off', 1: '1 Stage', 2: '2 Stages', 3: '3 Stages',
                     4: '4 Stages', 5: '5 Stages', 6: '6 Stages'},
+    'delay_mode': {0: 'Off',
+                   1: 'Simple Delay',
+                   2: 'Ping Pong 2:1',
+                   3: 'Ping Pong 4:3',
+                   4: 'Ping Pong 4:1',
+                   5: 'Ping Pong 8:7',
+                   6: 'Pattern 1+1',
+                   7: 'Pattern 2+1',
+                   8: 'Pattern 3+1',
+                   9: 'Pattern 4+1',
+                   10: 'Pattern 5+1',
+                   11: 'Pattern 2+3',
+                   12: 'Pattern 2+5',
+                   13: 'Pattern 3+2',
+                   14: 'Pattern 3+3',
+                   15: 'Pattern 3+4',
+                   16: 'Pattern 3+5',
+                   17: 'Pattern 4+3',
+                   18: 'Pattern 4+5',
+                   19: 'Pattern 5+2',
+                   20: 'Pattern 5+3',
+                   21: 'Pattern 5+4',
+                   22: 'Pattern 5+5',
+                   },
+
     'patch_delay_reverb_mode': {0: 'Off', 1: 'Delay', 2: 'Reverb',
                                 3: 'Delay+Reverb'},
 }
@@ -615,12 +640,13 @@ access_definitions = [
     ('chorus', 'lfo_shape', 110, 1, SELECT_TYPE),
 
     # 0 = off, 1 delay, 2 reverb, 3 both.
-    ('patch', 'delay_reverb_mode', 112, 1, SELECT_TYPE),
-    ('effect', 'effect_send', 113, 1, POSITIVE_TYPE ),
+    ('delay', 'mode', 112, 1, SELECT_TYPE),
+    ('delay', 'send', 113, 1, PERCENT_TYPE ),
+    # Delay if clock not specified.
     ('delay', 'time',  114, 1, POSITIVE_TYPE ),
-    ('delay', 'feedback', 115, 1, POSITIVE_TYPE ),
-    ('delay', 'rate', 116, 1, POSITIVE_TYPE), 
-    ('delay', 'depth', 117, 1, POSITIVE_TYPE),
+    ('delay', 'feedback', 115, 1, PERCENT_TYPE ),
+    ('delay', 'rate', 116, 1, POSITIVE_TYPE),
+    ('delay', 'depth', 117, 1, PERCENT_TYPE),
     ('delay', 'lfo_shape', 118, 1, SELECT_TYPE),
     ('delay', 'color', 119, 1, PLUS_MINUS_TYPE),
     ('keyboard', 'local', 122, 1, POSITIVE_TYPE),
@@ -656,7 +682,7 @@ access_definitions = [
     ('control', 'bender_range_up', 0x9a, 1, PLUS_MINUS_TYPE),
     ('control', 'bender_range_down', 0x9b, 1, PLUS_MINUS_TYPE),
     ('control', 'bender_scale', 0x9c, 1, SELECT_TYPE),
-    
+
     # 0=negative, 1=positive
     ('filter1', 'env_polarity', 0x9e, 1, POSITIVE_TYPE),
     ('filter2', 'env_polarity', 0x9f, 1, POSITIVE_TYPE),
@@ -811,7 +837,7 @@ access_definitions = [
 
     # Interpolation?
     ]
-    
+
 def euclidean_distance(a, b):
    """
    Returns the euclidean distance for n>=2 dimensions
@@ -886,9 +912,9 @@ class AccessPatch(patch.Patch):
                 other_scores.append(64)
 
         # Chorded vs non-chorded.
-        us_semitones = (self.settings.get('osc1_semitones') + 
+        us_semitones = (self.settings.get('osc1_semitones') +
                         self.settings.get('osc2_semitones'))
-        them_semitones = (patch.settings.get('osc1_semitones') + 
+        them_semitones = (patch.settings.get('osc1_semitones') +
                           patch.settings.get('osc2_semitones'))
         if (us_semitones % 12 != them_semitones % 12):
             us_scores.append(0)
@@ -896,7 +922,7 @@ class AccessPatch(patch.Patch):
         else:
             us_scores.append(0)
             other_scores.append(0)
-                        
+
 
         for key in ['arpeggio_mode']:
             if self.settings.get(key) == patch.settings.get(key):

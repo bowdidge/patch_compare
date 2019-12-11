@@ -21,7 +21,7 @@ font: bold 20px Helvetica;
 }
 
 
-.section { 
+.section {
 border-top: solid 4px black;
 width: 100%;
 margin: 20px;
@@ -67,7 +67,7 @@ text-align: center;
   text-align: center;
   padding: 5px 0;
   border-radius: 6px;
- 
+
   /* Position the tooltip text - see examples below! */
   position: absolute;
   z-index: 1;
@@ -87,11 +87,11 @@ function upload() {
     WebMidi.enable(function(err){
        var outputs = WebMidi.outputs;
        if (outputs.length < 1) {
-         status.innerHTML = "No MIDI device found.";
-         return;
+	 status.innerHTML = "No MIDI device found.";
+	 return;
        }
-       status.innerHTML = "";	
-       /* Access virus: output1 is midi, 2 is synth. */	   
+       status.innerHTML = "";
+       /* Access virus: output1 is midi, 2 is synth. */
        var output = outputs[1];
        var id = output.id;
        status.innerHTML = "Connected to " + output.name;
@@ -104,36 +104,36 @@ function upload() {
        // Remove sysex cmd and end, and remove manufacturer - all
        // are provided by sendSysex.
        for (i=0 ; i < len; i++) {
-           var ch = decoded.charCodeAt(i);
-           if (ch == 0xf0) {
+	   var ch = decoded.charCodeAt(i);
+	   if (ch == 0xf0) {
 	       // Skip manufacturer - added already.
-               // 1 byte for Yamaha, 3 for Access.
-               i += 3
+	       // 1 byte for Yamaha, 3 for Access.
+	       i += 3
 	       continue;
-           } else if (ch == 0xf7) {
-               msgs.push(cur_msg);
-               cur_msg = [];
-               continue;
-           }
-           cur_msg.push(decoded.charCodeAt(i));
+	   } else if (ch == 0xf7) {
+	       msgs.push(cur_msg);
+	       cur_msg = [];
+	       continue;
+	   }
+	   cur_msg.push(decoded.charCodeAt(i));
       }
        var i;
        var msg_count = msgs.length;
        var bytes = 0;
        if (msg_count == 0) {
-           status.innerHTML += "<br>No messages";
-           return;
+	   status.innerHTML += "<br>No messages";
+	   return;
        }
        for (i=0; i < msg_count; i++) {
-              var msg = msgs[i];
-              // Single byte or array.
-              var manufacturer = {{patch.manufacturer_string}};
-              output.sendSysex(manufacturer, msg);
-              bytes += msg.length;
-              status.innerHTML += "<br>Loaded patch.";
-              var j;
-              for (j=0; j < 1000; j++) {
-              }
+	      var msg = msgs[i];
+	      // Single byte or array.
+	      var manufacturer = {{patch.manufacturer_string}};
+	      output.sendSysex(manufacturer, msg);
+	      bytes += msg.length;
+	      status.innerHTML += "<br>Loaded patch.";
+	      var j;
+	      for (j=0; j < 1000; j++) {
+	      }
        }    }, true);
 }
 </script>
@@ -157,7 +157,7 @@ function upload() {
   </span>
 </div>
 <p>
-For <a href="/?device=virus">Access Virus</a>. From {{patch.source}}. 
+For <a href="/?device=virus">Access Virus</a>. From {{patch.source}}.
 Bank {{patch.patch_bank}}, slot {{patch.patch_bank_offset}}.
 </p>
 <p>
@@ -176,7 +176,7 @@ Chorded.
       <br>
       Smooth mode: {{patch.control_smooth_mode}}
       <br>
-      Bend: {{patch.control_bender_range_down}} to 
+      Bend: {{patch.control_bender_range_down}} to
       {{patch.control_bender_range_up}}, scale: {{patch.control_bender_scale}}
       <br>
       Polyphony mode: {{patch.patch_keymode}}
@@ -263,7 +263,7 @@ Mod Wheel controls xxx.  Pressure controls xxx.  Pedal controls xxx.
     <br>
     Transpose: {{patch.osc1_semitones}} steps
     <br>
-    Keyfollow: 
+    Keyfollow:
     {% if patch.osc1_keyfollow == 32 %}
     normal
     {% else %}
@@ -303,7 +303,7 @@ Mod Wheel controls xxx.  Pressure controls xxx.  Pedal controls xxx.
     {{patch.osc2_keyfollow}} (32=normal)
     {% endif %}
     <br>
-    Pitch: 
+    Pitch:
     Transpose: {{patch.osc2_semitones}} steps,
     detune {{patch.osc2_detune}} bits.
     <br>
@@ -644,10 +644,58 @@ Mod Wheel controls xxx.  Pressure controls xxx.  Pedal controls xxx.
   <div class="section_title">Effects</div>
   <div class="subsection">
     <div class="subsection_title">Delay</div>
-    {% if patch.patch_delay_reverb_mode == 1 or patch.patch_delay_reverb_mode == 3 %}
-    On
-    {% else %}
+    {% if patch.delay_send == -100 %}
     Off
+    {% else %}
+    Delay type:
+    <br>
+    Delay send: {{patch.delay_send}}
+    <br>
+    <div class="tooltip">Delay feedback:
+      <span class="tooltiptext">
+	Amount of output signal fed back into delay input.
+	</span>
+      </div>
+    {{patch.delay_feedback}}%
+    <br>
+    <div class="tooltip">Delay mode
+      <span class="tooltiptext">How the delay bounces between left and right
+      </span>
+    </div>:
+    {{patch.delay_mode}}
+    <br>
+    <div class="tooltip">Delay Clock
+      <span class="tooltiptext">Frequency of repeats in terms of tempo
+	</span>
+    </div>
+    {{patch.delay_clock}}
+    {% if patch.delay_clock_numeric == 0 %}
+    <br>
+    <div class="tooltip">Delay Time
+      <span class="tooltiptext">Length of reverb tail</span>
+    </div>
+      : {{patch.delay_time}}
+    {% endif %}
+    <br>
+    <div class="tooltip">Delay coloration:
+      <span class="tooltiptext">Equalization after reverb.  Larger values
+	are higher pitched, smaller are lower pi
+	</span>
+      </div>
+    {{patch.delay_color}}
+    <br>
+    <div class="tooltip">Delay rate:
+      <span class="tooltiptext">Speed of the delay LFO.</span>
+      </div> {{patch.delay_rate}}
+    <br>
+    <div class="tooltip">Delay Depth:
+      <span class="tooltiptext">Amount of modulation applied to delay time by LFO.
+	</span>
+    </div>
+    {{patch.delay_depth}}
+    <Br>
+    Delay LFO Shape: {{patch.delay_lfo_shape}}
+    <br>
     {% endif %}
   </div>
   <div class="subsection">
@@ -666,7 +714,7 @@ Mod Wheel controls xxx.  Pressure controls xxx.  Pedal controls xxx.
     {% if patch.distortion_curve == 0 %}
     Off
     {% else %}
-    On 
+    On
     {% endif %}
   </div>
   <div class="subsection">
