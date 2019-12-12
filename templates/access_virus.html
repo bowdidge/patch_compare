@@ -700,28 +700,73 @@ Mod Wheel controls xxx.  Pressure controls xxx.  Pedal controls xxx.
   </div>
   <div class="subsection">
     <div class="subsection_title">Reverb</div>
-    {% if patch.patch_delay_reverb_mode == 2 or patch.patch_delay_reverb_mode == 3 %}
-    On
-    {% else %}
-    Off
-    {% endif %}
+    Mode:
+    <br>
+    Type (Room size): {{patch.reverb_room}}
+    <br>
+    Send: {{patch.delay_send}}
+    <br>
+    Clock: {{patch.delay_clock}}
+    <br>
+    Time: {{patch.reverb_time}}
+    <br>
+    Damping: {{patch.delay_color}}
+    <br>
+    Coloration: {{patch.reverb_coloration}}
+    <br>
+    Predelay:
   </div>
   <div class="subsection">
     <div class="subsection_title">Equalizer</div>
+    Low EQ Frequency: {{patch.equalizer_low_freq}} (32-458 Hz)
+    <br>
+    Low EQ Gain:{{patch.equalizer_low_gain}} (-16 to +16 db)
+    <br>
+    Mid EQ Frequency: {{patch.equalizer_mid_frequency}} (19-24 Hz)
+    <br>
+    Mid EQ Q-Factor: {{patch.equalizer_mid_q}} (0.28 - 15.4)
+    <br>
+    Mid EQ Gain: {{patch.equalizer_mid_gain}} (-16 to +16 db)
+    <br>
+    High EQ Frequency: {{patch.equalizer_high_freq}} (1831 - 24.0 Khz)
+    <br>
+    High EQ Gain: {{patch.equalizer_high_gain}} (-16 to +16 db)
+    <br>
+    Bass Intensity: {{patch.equalizer_bass_intensity}}
+    <br>
+    Bass Tune: {{patch.equalizer_bass_tune}}
   </div>
   <div class="subsection">
     <div class="subsection_title">Distortion</div>
-    {% if patch.distortion_curve == 0 %}
-    Off
-    {% else %}
-    On
-    {% endif %}
+    Type: {{patch.distortion_curve}}
+    <br>
+    Mix: 
+    <br>
+    Intensity: {{patch.distortion_intensity}}
+    <br>
+    <!-- only for some -->
+    Treble Boost:
+    <br>
+    High Cut:
   </div>
   <div class="subsection">
     <div class="subsection_title">Character</div>
   </div>
   <div class="subsection">
     <div class="subsection_title">Chorus</div>
+    Type: {{ patch.chorus_type }}
+    <br>
+    Rate: {{ patch.chorus_rate }}
+    <br>
+    Depth: {{patch.chorus_depth }}
+    <br>
+    Feedback: {{patch.chorus_feedback }}
+    <br>
+    Delay: {{patch.chorus_delay }}
+    <br>
+    Mix: {{patch.chorus_mix }}
+    <br>
+    LFO Wave: {{patch.chorus_lfo_shape }}
     {% if patch.chorus_mix == 0%}
     Off
     {% else %}
@@ -787,8 +832,8 @@ Mod Wheel controls xxx.  Pressure controls xxx.  Pedal controls xxx.
 </table>
 Similar patches include:
 <ul>
-{% for patch in similar_patches %}
-<li><a href="{{patch.name}}">{{patch.name}}</a>
+{% for patch,score in similar_patches %}
+<li><a href="{{patch.name}}">{{patch.name}}</a>: {{score}}
 {% endfor %}
 </ul>
 <pre>

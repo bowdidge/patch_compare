@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/local/bin/python2.7
 #
 # Patch Compare: web server for displaying, comparing, and grouping
 # patches from different synthesizers.
@@ -11,7 +11,7 @@
 
 import BaseHTTPServer
 import glob
-import jinja
+import jinja2 as jinja
 import mido
 import os
 import sys
@@ -156,16 +156,20 @@ class PatchCompareHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                     smaller = True
             if smaller:
                 similar_patches.append((other, compare_score))
-                similar_patches = sorted(similar_patches,
+                similar_patches_and_scores = sorted(similar_patches,
                                          key=lambda x: x[1])[0:similar_count]
+
+        similar_patches = [x for x,y in similar_patches_and_scores]
+        for similar_patch in similar_patches:
+            print patch.compare_categories(similar_patch)
 
         patch_dict = patch.asDict()
         variables = {'patch_name': patch_dict.get('patch_name'),
                      'patch': patch_dict,
-                     'similar_patches': [x for x,y in similar_patches]}
+                     'similar_patches': similar_patches_and_scores}
         template = 'patch.html'
         if patch.settings['device'] == 'virus':
-            template = 'virus.html'
+            template = 'access_virus.html'
         else:
             template = 'reface_dx.html'
         content = self.render_template(template, variables)

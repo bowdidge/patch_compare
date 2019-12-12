@@ -12,7 +12,6 @@ Showing only patches from
   <th>Category</th>
   <th>Effect 1</th>
   <th>Effect 2</th>
-  <th>Velocity sensitive v1</th>
 </tr>
 {% for patch in patches %}
 <tr>
@@ -36,9 +35,6 @@ Showing only patches from
   </td>
   <td>
     {{ patch.effect_2_type_name }}
-  </td>
-  <td>
-    {{ patch.voices[0].velocity_sensitivity}}
   </td>
 </tr>
 {% endfor %}

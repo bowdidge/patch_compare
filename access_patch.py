@@ -444,7 +444,11 @@ access_select_styles = {
     'delay_clock': lfo_rates,
     'lfo3_clock': lfo_rates,
     'distortion_curve': {0: 'Off', 1: 'Light', 2: 'Soft', 3: 'Middle',
-                         4: 'Hard', 5: 'Digital', 6: '???'},
+                         4: 'Hard', 5: 'Digital', 6: '???',
+                         9: 'Rate Reducer',
+                         12: 'Wide',
+                         21: 'Curry Overdrive',
+                         22: 'Saffron Overdrive',},
     'lfo3_destination': {0: 'Osc 1 Pitch', 1: 'Osc 1+2 Pitch',
                          2: 'Osc 2 Pitch', 3:'Osc 1+2 Pulsewidth',
                          4: 'Osc2 Pulsewidth', 5: 'Sync Phase' },
@@ -517,6 +521,7 @@ access_select_styles = {
                    22: 'Pattern 5+5',
                    },
 
+    'reverb_room': {6: 'Hall', 19: 'Large Room'},
     'patch_delay_reverb_mode': {0: 'Off', 1: 'Delay', 2: 'Reverb',
                                 3: 'Delay+Reverb'},
 }
@@ -632,11 +637,11 @@ access_definitions = [
     ('input', 'mode', 101, 1, SELECT_TYPE),
     ('input', 'select', 102, 1, SELECT_TYPE),
 
-    ('chorus', 'mix', 105, 1, PLUS_MINUS_TYPE),
+    ('chorus', 'mix', 105, 1, PERCENT_TYPE),
     ('chorus', 'rate', 106, 1, POSITIVE_TYPE),
-    ('chorus', 'depth', 107, 1, POSITIVE_TYPE),
+    ('chorus', 'depth', 107, 1, PERCENT_TYPE),
     ('chorus', 'delay', 108, 1, POSITIVE_TYPE),
-    ('chorus', 'feedback', 109, 1, POSITIVE_TYPE),
+    ('chorus', 'feedback', 109, 1, PLUS_MINUS_PERCENT_TYPE),
     ('chorus', 'lfo_shape', 110, 1, SELECT_TYPE),
 
     # 0 = off, 1 delay, 2 reverb, 3 both.
@@ -647,6 +652,7 @@ access_definitions = [
     ('delay', 'feedback', 115, 1, PERCENT_TYPE ),
     ('delay', 'rate', 116, 1, POSITIVE_TYPE),
     ('delay', 'depth', 117, 1, PERCENT_TYPE),
+    ('reverb', 'room', 117, 1, SELECT_TYPE),
     ('delay', 'lfo_shape', 118, 1, SELECT_TYPE),
     ('delay', 'color', 119, 1, PLUS_MINUS_TYPE),
     ('keyboard', 'local', 122, 1, POSITIVE_TYPE),
@@ -766,7 +772,7 @@ access_definitions = [
     ('equalizer', 'bass_tune', 0xe2, 1, POSITIVE_TYPE),
     ('ring_modulator', 'input', 0xe3, 1, POSITIVE_TYPE),
     ('distortion', 'curve', 0xe4, 1, SELECT_TYPE),
-    ('distortion', 'intensity', 0xe5, 1, POSITIVE_TYPE),
+    ('distortion', 'intensity', 0xe5, 1, PERCENT_TYPE),
 
 
     ('mod_matrix_4', 'source', 0xe7, 1, SELECT_TYPE),
@@ -794,6 +800,9 @@ access_definitions = [
     ('filter', 'select', 0xfa, 1, SELECT_TYPE),
     ('patch', 'category_1', 0xfb, 1, SELECT_TYPE),
     ('patch', 'category_2', 0xfc, 1, SELECT_TYPE),
+
+    ('reverb', 'time', 0x105, 1, POSITIVE_TYPE),
+    ('reverb', 'coloration', 0x107, 1, PLUS_MINUS_TYPE),
     ('soft_knob', 'function_3', 0x11d, 1, SELECT_TYPE),
     ('osc1', 'mode', 0x11f, 1, SELECT_TYPE),
     # Guess
@@ -866,8 +875,8 @@ class AccessPatch(patch.Patch):
         self.select_styles = access_select_styles
 
     def compare(self, other):
-        us_scores = []
-        other_scores = []
+        # Tuples of (label, self value, other value)
+        scores = []
         for (block, label, _, _, type) in self.definitions:
             key = '%s_%s' % (block, label)
             if key in self.settings and key in other.settings:
@@ -875,16 +884,52 @@ class AccessPatch(patch.Patch):
                     continue
                 if type == SELECT_TYPE:
                     if self.settings[key] == other.settings[key]:
-                        us_scores.append(0)
-                        other_scores.append(0)
+                        scores.append((key, 0, 0))
                     else:
-                        us_scores.append(0)
-                        other_scores.append(64)
+                        scores.append((key, 0, 64))
                 else:
-                    us_scores.append(self.settings[key])
-                    other_scores.append(other.settings[key])
-        return euclidean_distance(us_scores, other_scores)
+                    scores.append((key, self.settings[key],
+                                   other.settings[key]))
+        us = [x[1] for x in scores]
+        other = [x[2] for x in scores]
+        return euclidean_distance(us, other)
 
+    def compare_categories(self, other):
+        """Returns categorization of blocks that are similar and different
+        between patch.
+
+        Result is a dictionary of block names, and score for each showing
+        euclidean distance.
+        """
+        # Tuples of (label, self value, other value)
+        scores = []
+        for (block, label, _, _, type) in self.definitions:
+            key = '%s_%s' % (block, label)
+            if key in self.settings and key in other.settings:
+                if type == STRING_TYPE:
+                    continue
+                if type == SELECT_TYPE:
+                    if self.settings[key] == other.settings[key]:
+                        scores.append((key, 0, 0))
+                    else:
+                        scores.append((key, 0, 64))
+                else:
+                    scores.append((key, self.settings[key],
+                                   other.settings[key]))
+
+        categories = {}
+        for (label, us, other) in scores:
+            category = label.split('_')[0]
+            if category not in categories:
+                categories[category] = []
+            categories[category].append((us, other))
+
+        result = {}
+        for category in categories:
+            us = [x[0] for x in categories[category]]
+            other = [x[1] for x in categories[category]]
+            result[category] = euclidean_distance(us, other)
+        return result
 
     def old_compare(self, patch):
         """Returns a score comparing two patches."""

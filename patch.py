@@ -34,7 +34,7 @@ STRING_TYPE=5
 PLUS_MINUS_PERCENT_TYPE=6
 
 # CC represents a value from 0% to 100%.
-PERCENT_TYPE=6
+PERCENT_TYPE=7
 
 class Patch(object):
     """Base class for all synthesizer-specific patches.
@@ -110,13 +110,15 @@ class Patch(object):
         if group_key:
             the_dict = self.settings[group_key]
 
+        for label in self.settings:
+            if label.endswith('_numeric'):
+                out[label] = self.settings[label]
         for block, label, _, _, type in definitions:
             key = '%s_%s' % (block, label)
             if key not in the_dict:
                 continue
             if type == SELECT_TYPE:
                 out[key] = self.select_label(key, the_dict[key])
-                out[key + '_numeric'] = the_dict[key]
             elif type == ON_OFF_TYPE:
                 if the_dict[key] == 0:
                     out[key] = 'off'
@@ -251,6 +253,8 @@ class Patch(object):
                 print 'problems parsing %s:%s' % (rule, e)
                 continue
             full_label = '%s_%s' % (block, label)
+            
+            the_dict[full_label + '_numeric'] = self.sysex[start_offset + offset]
             if type is STRING_TYPE:
                 the_dict[full_label] = str(self.sysex[start_offset + offset:start_offset + offset + bytes]).strip()
             elif type is NONE_TYPE:
