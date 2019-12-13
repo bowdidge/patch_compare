@@ -353,6 +353,75 @@ for i in range(65, 126):
     wave_shape[i] = 'Saw>Pulse %d%%' % ((i - 64) * 100 / 64)
 wave_shape[127] = 'Pulse'
 
+# Spectral waves are different from wavetables.
+# Guesses about types from
+# http://www.infekted.org/virus/showthread.php?t=25580&page=2.
+spectral_waveforms = {
+    0: 'Sine',
+    1: 'Tri',
+    2: 'Wave 3',
+    3: 'Wave 4',
+    4: 'Piano',
+    5: 'Wave 6',
+    6: 'Vocal',
+    7: 'Violin',
+    8: 'Acid',
+    19: 'Wave 10',
+    10: 'Wave 11',
+    11: 'Wave 12',
+    12: 'Piano 2',
+    13: 'Bell',
+    14: 'Vocal 2',
+    15: 'Metal',
+    16: 'Violin 2',
+    17: 'Wave 18',
+    18: 'Reed',
+    19: 'Guitar',
+    20: 'Violin 3',
+    21: 'Violin 4',
+    22: 'Bass',
+    23: 'Wave 24',
+    24: 'Wave 25',
+    25: 'Wind',
+    26: 'Violin 5',
+    27: 'Brass',
+    28: 'Violin 6',
+    29: 'Mallet',
+    30: 'Wave 31',
+    31: 'Wave 32',
+    32: 'Wave 33',
+    33: 'Wave 34',
+    34: 'Wave 35',
+    35: 'Wave 36',
+    36: 'Violin 7',
+    37: 'Brass 2',
+    38: 'Violin 8',
+    39: 'Violin 9',
+    40: 'Bass/Guitar/Vocal',
+    41: 'Bell 2',
+    42: 'Piano 3',
+    43: 'Reed 2',
+    44: 'Wave 45',
+    45: 'Bell 3',
+    46: 'Organ',
+    47: 'Organ 2',
+    48: 'Organ 3',
+    49: 'Wave 50',
+    50: 'Bass 2',
+    51: 'Violin/Vocal',
+    52: 'Bell 4',
+    53: 'Piano/Violin',
+    54: 'Piano 4',
+    55: 'Piano 5',
+    56: 'Saw/Sync',
+    57: 'Bell',
+    58: 'Bass 2',
+    59: 'Bass 3',
+    60: 'FM',
+    61: 'FM 2',
+    62: 'FM 3',
+    63: 'FM/Violin',
+}
 waveforms = {0: 'Sine',
              1: 'HarmoncSweep', 2: 'GlassSweep',
              8: 'Opposition',
@@ -399,7 +468,9 @@ access_select_styles = {
     'osc2_shape': wave_shape,
 
     'osc1_wave': waveforms,
+    'osc1_spectral_wave': spectral_waveforms,
     'osc2_wave': waveforms,
+    'osc2_spectral_wave': spectral_waveforms,
     'subosc_shape': {0: 'square', 1: 'triangle' },
     'osc3_mode': {0: 'Off', 1: 'Osc2Slave', 2: 'Saw', 3: 'Pulse',
                   4: 'Sine', 5: 'Triangle'},
@@ -550,20 +621,44 @@ access_definitions = [
     ('osc1', 'pulsewidth', 18, 1, POSITIVE_TYPE),
     # sine, triangle, wave.
     ('osc1', 'wave', 19, 1, SELECT_TYPE),
+    ('osc1', 'spectral_wave', 19, 1, SELECT_TYPE),
+
+    # Adjusts pitch of oscillator.
     ('osc1', 'semitones', 20, 1, PLUS_MINUS_TYPE),
+
+    # How much pitch of oscillator 1 follows keyboard.
+    # Normal tuning is 96.
     ('osc1', 'keyfollow', 21, 1, PLUS_MINUS_TYPE),
+
+    # For Hypersaw, parameter is called density, and indicates number of
+    # sawtooth waves combined.
     ('osc2', 'shape', 22, 1, SELECT_TYPE),
+
+    # For Hypersaw, called Spread.  Detunes individual sawtooths.
     ('osc2', 'pulsewidth', 23, 1, POSITIVE_TYPE),
     ('osc2', 'wave', 24, 1, SELECT_TYPE),
+    ('osc2', 'spectral_wave', 24, 1, SELECT_TYPE),
     ('osc2', 'semitones', 25, 1, PLUS_MINUS_TYPE),
     ('osc2', 'detune', 26, 1, PLUS_MINUS_TYPE),
+
+    # Intensity of frequency modulation.
     ('osc2', 'fm_amount', 27, 1, POSITIVE_TYPE),
+
+    # Whether oscillator  and 2 get sync'd curves.
     ('osc2', 'sync', 28, 1, ON_OFF_TYPE),
+
+    # How much the filter envelope modulates the pitch of oscillator 2.
+    # Can also be done with mod matric.
     ('osc2', 'fltenv_pitch', 29, 1, PLUS_MINUS_TYPE),
+
+    # How much the filter envelope affects FM.
     ('osc2', 'filtenv_fm', 30, 1, PLUS_MINUS_TYPE),
     ('osc2', 'keyfollow', 31, 1, PLUS_MINUS_TYPE),
     # 32: Bank select
+
+    # Balance between oscillator 1 and 2.
     ('osc', 'balance', 33, 1, PLUS_MINUS_PERCENT_TYPE),
+
     # Difference between subosc and oscillator 3?
     ('subosc', 'volume', 34, 1, POSITIVE_TYPE),
     ('subosc', 'shape', 35, 1, SELECT_TYPE),
@@ -696,6 +791,8 @@ access_definitions = [
     ('filter', 'cutoff_link', 0xa0, 1, POSITIVE_TYPE),
     # c-1 - G9.
     ('filter', 'keytrack_base', 0xa1, 1, POSITIVE_TYPE),
+
+    # Type of FM.  Varies between Classic and Wavetable mode.
     # 0: pos-tri, 1:tri, 2:wave, 3: noise, 4:in l, 5 in L+R
     ('osc', 'fm_mode', 0xa2, 1, SELECT_TYPE),
     # 0 off, 1..127
@@ -706,12 +803,15 @@ access_definitions = [
     ('input', 'follower_mode', 0xa6, 1, SELECT_TYPE),
     ('vocoder', 'mode', 0xa7, 1, SELECT_TYPE),
 
+    # Oscillator 3 is a separate oscillator, and differs from the
+    # suboscillator in the other oscillators.
     # 0: off, 1: Osc2 slave, 2: saw, 3, pulse, 4: sine, 5: triangle
     ('osc3', 'mode', 0xa9, 1, SELECT_TYPE),
     ('osc3', 'volume', 0xaa, 1, POSITIVE_TYPE),
     ('osc3', 'semitone', 0xab, 1, PLUS_MINUS_TYPE),
     ('osc3', 'detune', 0xac, 1, POSITIVE_TYPE),
     ('equalizer', 'low_freq', 0xad, 1, POSITIVE_TYPE),
+    # Cutoff frequency for high frequencies. 1830 Hz to 24KHz.
     ('equalizer', 'high_freq', 0xae, 1, POSITIVE_TYPE),
     ('osc1', 'shape_velocity', 0xaf, 1, PLUS_MINUS_TYPE),
     ('osc2', 'shape_velocity', 0xb0, 1, PLUS_MINUS_TYPE),
@@ -767,6 +867,7 @@ access_definitions = [
     ('equalizer', 'mid_frequency', 0xdd, 1, POSITIVE_TYPE),
     ('equalizer', 'mid_q', 0xde, 1, POSITIVE_TYPE),
     ('equalizer', 'low_gain', 0xdf, 1, POSITIVE_TYPE),
+    # How much to boost or lower high frequencies.  -16db to 16db.
     ('equalizer', 'high_gain', 0xe0, 1, POSITIVE_TYPE),
     ('equalizer', 'bass_intensite', 0xe1, 1, POSITIVE_TYPE),
     ('equalizer', 'bass_tune', 0xe2, 1, POSITIVE_TYPE),
@@ -804,8 +905,9 @@ access_definitions = [
     ('reverb', 'time', 0x105, 1, POSITIVE_TYPE),
     ('reverb', 'coloration', 0x107, 1, PLUS_MINUS_TYPE),
     ('soft_knob', 'function_3', 0x11d, 1, SELECT_TYPE),
+
+    # Basic type of oscillator.  Classic, Hypersaw, Wavetable, etc.
     ('osc1', 'mode', 0x11f, 1, SELECT_TYPE),
-    # Guess
     ('osc2', 'mode', 0x124, 1, SELECT_TYPE),
 
     ('osc1', 'interpolation', 0x12d, 1, POSITIVE_TYPE),

@@ -247,7 +247,11 @@ Mod Wheel controls xxx.  Pressure controls xxx.  Pedal controls xxx.
 	For wavetable, interpolation decides how many waves to average.
 	</span>
     </div>
+    {% if patch.osc1_mode_numeric == 0 and patch.osc1_shape_numeric == 0 %}
+    {{patch.osc1_spectral_wave}}
+    {% else %}
     {{patch.osc1_wave}}
+    {% endif %}
     <br>
     <div class="tooltip">Interpolation
     <span class="tooltiptext">Width of span of waveforms to average.  0=wide, 1=individual
@@ -258,7 +262,7 @@ Mod Wheel controls xxx.  Pressure controls xxx.  Pedal controls xxx.
 	Local detune for hypersaw.</span>
       : {{ patch.osc1_pulsewidth }}
     </div>
-    <br>
+    <br> 
     <b>Pitch</b>
     <br>
     Transpose: {{patch.osc1_semitones}} steps
@@ -288,7 +292,12 @@ Mod Wheel controls xxx.  Pressure controls xxx.  Pedal controls xxx.
       {{patch.osc2_shape}}
 {% endif %}
     <br>
-    Wave: {{patch.osc2_wave}}
+    Wave:
+    {% if patch.osc2_mode_numeric == 0 and patch.osc2_shape_numeric == 0 %}
+    {{patch.osc2_spectral_wave}}
+    {% else %}
+    {{patch.osc2_wave}}
+    {% endif %}
     <br>
     <div class="tooltip">Interpolation
     <span class="tooltiptext">Width of span of waveforms to average.  0=wide, 1=individual
